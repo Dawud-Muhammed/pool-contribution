@@ -68,6 +68,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, pool }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Could not create pool" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Could not create pool";
+    const migrationHint = message.includes("payment_destinations") || message.includes("column")
+      ? " Run the latest database migration with: npx drizzle-kit migrate"
+      : "";
+    return NextResponse.json({ error: `${message}.${migrationHint}` }, { status: 500 });
   }
 }
