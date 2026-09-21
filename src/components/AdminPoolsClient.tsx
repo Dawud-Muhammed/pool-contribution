@@ -53,8 +53,15 @@ export default function AdminPoolsClient() {
     setSaved("");
     try {
       const response = await fetch("/api/admin/pools", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
-      const result = await response.json();
+      const responseText = await response.text();
+      let result: { error?: string; pool?: { id: string } } = {};
+      try {
+        result = responseText ? JSON.parse(responseText) : {};
+      } catch {
+        throw new Error(`Pool API returned an invalid response (${response.status}). Check the Vercel function logs.`);
+      }
       if (!response.ok) throw new Error(result.error || "Could not create pool.");
+      if (!result.pool) throw new Error("Pool was not returned by the server.");
       setForm(emptyForm);
       setSaved(`Pool created. Public link: /pools/${result.pool.id}`);
       await loadPools();
