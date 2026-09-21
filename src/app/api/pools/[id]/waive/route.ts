@@ -2,11 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { contributions, ledgerEntries } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { isAdmin } from "@/lib/admin";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!(await isAdmin(req))) {
+    return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+  }
+
   try {
     const { id: poolId } = await params;
     const { contributionId } = await req.json();
