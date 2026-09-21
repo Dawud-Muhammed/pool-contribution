@@ -21,6 +21,11 @@ export async function GET(
       columns: {
         id: true,
         name: true,
+        purpose: true,
+        beneficiary: true,
+        paymentProvider: true,
+        paymentAccount: true,
+        paymentInstructions: true,
         capAmount: true,
         currency: true,
         status: true,

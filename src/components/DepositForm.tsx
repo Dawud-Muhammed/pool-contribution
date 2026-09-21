@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 type DepositFormProps = { poolId?: string };
 
@@ -10,6 +10,12 @@ export default function DepositForm({ poolId }: DepositFormProps) {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
   const [depositId, setDepositId] = useState("");
+  const [poolContext, setPoolContext] = useState<{ name: string; paymentProvider: string | null; paymentAccount: string | null; paymentInstructions: string } | null>(null);
+
+  useEffect(() => {
+    if (!poolId) return;
+    fetch(`/api/pools/${poolId}/ledger`).then((response) => response.json()).then((result) => { if (result.pool) setPoolContext(result.pool); }).catch(() => undefined);
+  }, [poolId]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -35,6 +41,7 @@ export default function DepositForm({ poolId }: DepositFormProps) {
 
   return (
     <form className="form-stack" onSubmit={submit}>
+      {poolContext && <div className="payment-instructions"><span className="eyebrow">Paying into {poolContext.name}</span><strong>{poolContext.paymentProvider} · {poolContext.paymentAccount}</strong><p>{poolContext.paymentInstructions}</p></div>}
       <div className="field-grid">
         <label>Provider<select value={providerKey} onChange={(event) => setProviderKey(event.target.value)}>
           <option value="telebirr">Telebirr</option><option value="cbe">CBE</option><option value="cbebirr">CBE Birr</option><option value="awash">Awash</option>

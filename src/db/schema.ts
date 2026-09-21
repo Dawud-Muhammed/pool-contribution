@@ -72,6 +72,11 @@ export const pools = pgTable("pools", {
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull(),
+  purpose: text("purpose").notNull().default(""),
+  beneficiary: text("beneficiary").notNull().default(""),
+  paymentProvider: text("payment_provider"),
+  paymentAccount: text("payment_account"),
+  paymentInstructions: text("payment_instructions").notNull().default(""),
   capAmount: numeric("cap_amount", { precision: 14, scale: 2 }).notNull(),
   currency: text("currency").notNull().default("ETB"),
   status: text("status").notNull().default("open"), // open, capped, closed, paused

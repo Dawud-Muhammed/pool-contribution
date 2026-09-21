@@ -9,6 +9,11 @@ export async function GET() {
       .select({
         id: pools.id,
         name: pools.name,
+        purpose: pools.purpose,
+        beneficiary: pools.beneficiary,
+        paymentProvider: pools.paymentProvider,
+        paymentAccount: pools.paymentAccount,
+        paymentInstructions: pools.paymentInstructions,
         capAmount: pools.capAmount,
         currency: pools.currency,
         status: pools.status,
