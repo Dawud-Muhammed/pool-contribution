@@ -3,11 +3,16 @@ import { db } from "@/db";
 import { pools, deposits, contributions, ledgerEntries } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { generatePseudonym } from "@/lib/pseudonym";
+import { isAdmin } from "@/lib/admin";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!(await isAdmin(req))) {
+    return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+  }
+
   try {
     const { id: poolId } = await params;
     const body = await req.json();
