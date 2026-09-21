@@ -15,8 +15,7 @@ export async function GET(request: NextRequest) {
       name: pools.name,
       purpose: pools.purpose,
       beneficiary: pools.beneficiary,
-      paymentProvider: pools.paymentProvider,
-      paymentAccount: pools.paymentAccount,
+      paymentDestinations: pools.paymentDestinations,
       paymentInstructions: pools.paymentInstructions,
       capAmount: pools.capAmount,
       currency: pools.currency,
@@ -39,10 +38,16 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { name, purpose, beneficiary, capAmount, currency, paymentProvider, paymentAccount, paymentInstructions } = body;
-    if (!name || !purpose || !beneficiary || !capAmount || !paymentProvider || !paymentAccount || !paymentInstructions) {
-      return NextResponse.json({ error: "Name, purpose, beneficiary, cap, payment provider, payment account, and instructions are required." }, { status: 400 });
+    const { name, purpose, beneficiary, capAmount, currency, paymentDestinations, paymentInstructions } = body;
+    if (!name || !purpose || !beneficiary || !capAmount || !paymentInstructions || !Array.isArray(paymentDestinations) || paymentDestinations.length === 0) {
+      return NextResponse.json({ error: "Name, purpose, beneficiary, cap, at least one payment destination, and instructions are required." }, { status: 400 });
     }
+
+    const destinations = paymentDestinations
+      .filter((destination: unknown): destination is { label: string; value: string } => typeof destination === "object" && destination !== null && typeof (destination as { label?: unknown }).label === "string" && typeof (destination as { value?: unknown }).value === "string")
+      .map((destination) => ({ label: destination.label.trim(), value: destination.value.trim() }))
+      .filter((destination) => destination.label && destination.value);
+    if (!destinations.length) return NextResponse.json({ error: "Add at least one complete payment destination." }, { status: 400 });
 
     const cap = Number(capAmount);
     if (!Number.isFinite(cap) || cap <= 0) {
@@ -56,8 +61,7 @@ export async function POST(request: NextRequest) {
       beneficiary: String(beneficiary).trim(),
       capAmount: cap.toFixed(2),
       currency: currency || "ETB",
-      paymentProvider: String(paymentProvider).trim(),
-      paymentAccount: String(paymentAccount).trim(),
+      paymentDestinations: destinations,
       paymentInstructions: String(paymentInstructions).trim(),
       status: "open",
     }).returning();

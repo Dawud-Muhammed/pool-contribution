@@ -27,7 +27,7 @@ export default function AdminLoginPage() {
         throw new Error(result.message || result.error || "Sign in failed.");
       }
 
-      router.push("/pools");
+      router.push("/admin/pools");
       router.refresh();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Sign in failed.");
