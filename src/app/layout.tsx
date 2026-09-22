@@ -28,7 +28,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col"><header className="site-header"><Link className="brand" href="/"><span className="brand-mark">P</span><span>poolhouse</span></Link><nav><Link href="/pools">Explore pools</Link><Link href="/deposit">Verify receipt</Link></nav><span className="header-note">Transparent by default</span></header>{children}<footer className="site-footer"><span>poolhouse / community finance</span><span>Public ledger. Private identities.</span></footer></body>
+      <body className="min-h-full flex flex-col"><header className="site-header"><Link className="brand" href="/"><span className="brand-mark">P</span><span>poolhouse</span></Link><nav><Link href="/pools">Explore pools</Link></nav><span className="header-note">Transparent by default</span></header>{children}<footer className="site-footer"><span>poolhouse / community finance</span><span>Public ledger. Private identities.</span></footer></body>
     </html>
   );
 }
