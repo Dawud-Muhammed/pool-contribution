@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
         {
           ok: false,
           depositId: failedDeposit.id,
-          error: verificationResult.error,
+          error: verificationResult.error?.message || "Verification failed",
         },
         { status: 400 }
       );
