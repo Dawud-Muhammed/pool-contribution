@@ -38,11 +38,9 @@ export default function DepositForm({ poolId }: DepositFormProps) {
     return available.length > 0 ? available : ALL_PROVIDERS;
   }, [poolContext]);
 
-  useEffect(() => {
-    if (displayProviders.length > 0 && !displayProviders.some(p => p.value === providerKey)) {
-      setProviderKey(displayProviders[0].value);
-    }
-  }, [displayProviders, providerKey]);
+  const selectedProvider = displayProviders.some(p => p.value === providerKey)
+    ? providerKey
+    : (displayProviders[0]?.value || "telebirr");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -52,7 +50,7 @@ export default function DepositForm({ poolId }: DepositFormProps) {
       const response = await fetch("/api/deposits", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID() },
-        body: JSON.stringify({ providerKey, receiptRef, poolId }),
+        body: JSON.stringify({ providerKey: selectedProvider, receiptRef, poolId }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Verification could not be completed.");
@@ -62,7 +60,12 @@ export default function DepositForm({ poolId }: DepositFormProps) {
       setReceiptRef("");
     } catch (error) {
       setStatus("error");
-      setMessage(error instanceof Error ? error.message : "Verification failed.");
+      const errMsg = error instanceof Error ? error.message : "Verification failed.";
+      setMessage(
+        errMsg === "Failed to fetch" 
+          ? "Network connection failed. Please check your connection or make sure the server is running." 
+          : errMsg
+      );
     }
   }
 
@@ -70,10 +73,10 @@ export default function DepositForm({ poolId }: DepositFormProps) {
     <form className="form-stack" onSubmit={submit}>
       {poolContext && <div className="payment-instructions"><span className="eyebrow">Paying into {poolContext.name}</span>{poolContext.paymentDestinations.map((destination) => <strong key={`${destination.label}-${destination.value}`}>{destination.label} · {destination.value}</strong>)}<p>{poolContext.paymentInstructions}</p></div>}
       <div className="field-grid">
-        <label>Provider<select value={providerKey} onChange={(event) => setProviderKey(event.target.value)}>
+        <label>Provider<select value={selectedProvider} onChange={(event) => setProviderKey(event.target.value)}>
           {displayProviders.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
         </select></label>
-        <label>Receipt reference or URL<input required value={receiptRef} onChange={(event) => setReceiptRef(event.target.value.toUpperCase())} placeholder={providerKey === "telebirr" ? "e.g. TXN-48291" : "Paste the receipt URL"} /></label>
+        <label>Receipt reference or URL<input required value={receiptRef} onChange={(event) => setReceiptRef(event.target.value.toUpperCase())} placeholder={selectedProvider === "telebirr" ? "e.g. TXN-48291" : "Paste the receipt URL"} /></label>
       </div>
       <p className="field-note">We verify against the provider source. Your receipt and payer name stay private.</p>
       <button className="button primary" type="submit" disabled={status === "loading"}>{status === "loading" ? "Checking receipt..." : "Verify receipt"}</button>
