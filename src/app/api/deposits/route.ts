@@ -73,15 +73,19 @@ export async function POST(req: NextRequest) {
     });
 
     if (existing) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "Receipt already used.",
-          depositId: existing.id,
-          status: existing.status,
-        },
-        { status: 409 }
-      );
+      // If it already succeeded or is locked, prevent reuse
+      if (existing.status !== "failed") {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "Receipt already used.",
+            depositId: existing.id,
+            status: existing.status,
+          },
+          { status: 409 }
+        );
+      }
+      // If it is 'failed', we allow the retry!
     }
 
     // Call links.et verification
@@ -96,22 +100,27 @@ export async function POST(req: NextRequest) {
 
     if (!verificationResult.ok) {
       // Record failed or verifying attempt for audit
-      const [failedDeposit] = await db
-        .insert(deposits)
-        .values({
-          id: crypto.randomUUID(),
+      const failedDepositId = existing ? existing.id : crypto.randomUUID();
+      
+      if (existing) {
+        await db.update(deposits).set({ status: "failed", userId }).where(eq(deposits.id, failedDepositId));
+      } else {
+        await db.insert(deposits).values({
+          id: failedDepositId,
           userId,
           providerKey,
           receiptRef: ref,
           status: "failed",
-        })
-        .returning();
+        });
+      }
 
       return NextResponse.json(
         {
           ok: false,
-          depositId: failedDeposit.id,
-          error: verificationResult.error?.message || "Verification failed",
+          depositId: failedDepositId,
+          error: typeof verificationResult.error === 'string' 
+            ? verificationResult.error 
+            : verificationResult.error?.message || (verificationResult as any).message || "Verification failed",
         },
         { status: 400 }
       );
@@ -142,21 +151,24 @@ export async function POST(req: NextRequest) {
         if (receiverAccount && destinations.length > 0) {
           if (!isReceiverAccountMatch(receiverAccount, destinations)) {
             // Record the failed deposit for audit trail
-            const [fraudDeposit] = await db
-              .insert(deposits)
-              .values({
-                id: crypto.randomUUID(),
+            const fraudDepositId = existing ? existing.id : crypto.randomUUID();
+            if (existing) {
+              await db.update(deposits).set({ status: "failed", userId }).where(eq(deposits.id, fraudDepositId));
+            } else {
+              await db.insert(deposits).values({
+                id: fraudDepositId,
                 userId,
                 providerKey,
                 receiptRef: ref,
                 status: "failed",
-              })
-              .returning();
+              });
+            }
 
             // Store the receipt privately for admin investigation
+            await db.delete(receiptsPrivate).where(eq(receiptsPrivate.depositId, fraudDepositId));
             await db.insert(receiptsPrivate).values({
               id: crypto.randomUUID(),
-              depositId: fraudDeposit.id,
+              depositId: fraudDepositId,
               rawReceiptJson: receipt,
               payerName: receipt.payerName || null,
               fetchedAt: new Date(
@@ -167,7 +179,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json(
               {
                 ok: false,
-                depositId: fraudDeposit.id,
+                depositId: fraudDepositId,
                 error:
                   "Receipt is valid but was not paid to an account associated with this pool. " +
                   "The receiver account on the receipt does not match any listed payment destination. " +
@@ -180,24 +192,42 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const depositId = crypto.randomUUID();
+    const depositId = existing ? existing.id : crypto.randomUUID();
 
     // Store deposit and sensitive receipt in admin-only table receipts_private
-    const [savedDeposit] = await db
-      .insert(deposits)
-      .values({
-        id: depositId,
-        userId,
-        providerKey,
-        receiptRef: ref,
-        verifiedAmount: verifiedAmount ? verifiedAmount.toString() : null,
-        status: "verified",
-        linksEtRequestId: verificationResult.providerKey,
-        verifiedAt: new Date(verificationResult.fetchedAt || Date.now()),
-      })
-      .returning();
+    let savedDeposit;
+    if (existing) {
+      const [updated] = await db
+        .update(deposits)
+        .set({
+          verifiedAmount: verifiedAmount ? verifiedAmount.toString() : null,
+          status: "verified",
+          linksEtRequestId: verificationResult.providerKey,
+          verifiedAt: new Date(verificationResult.fetchedAt || Date.now()),
+          userId,
+        })
+        .where(eq(deposits.id, depositId))
+        .returning();
+      savedDeposit = updated;
+    } else {
+      const [inserted] = await db
+        .insert(deposits)
+        .values({
+          id: depositId,
+          userId,
+          providerKey,
+          receiptRef: ref,
+          verifiedAmount: verifiedAmount ? verifiedAmount.toString() : null,
+          status: "verified",
+          linksEtRequestId: verificationResult.providerKey,
+          verifiedAt: new Date(verificationResult.fetchedAt || Date.now()),
+        })
+        .returning();
+      savedDeposit = inserted;
+    }
 
     // Invariant §3.4 / §11: Raw receipt JSON and bank payer name go to receipts_private
+    await db.delete(receiptsPrivate).where(eq(receiptsPrivate.depositId, depositId));
     await db.insert(receiptsPrivate).values({
       id: crypto.randomUUID(),
       depositId: savedDeposit.id,
