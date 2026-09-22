@@ -1,5 +1,7 @@
 import AdminProfileClient from "@/components/AdminProfileClient";
+import { adminGuard } from "@/lib/adminGuard";
 
-export default function AdminProfilePage() {
+export default async function AdminProfilePage() {
+  await adminGuard();
   return <AdminProfileClient />;
 }

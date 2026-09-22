@@ -20,18 +20,30 @@ export default function AdminPoolsClient() {
 
   async function loadPools() {
     const response = await fetch("/api/admin/pools");
-    const result = await response.json();
+    const text = await response.text();
+    let result: { error?: string; pools?: Pool[] };
+    try {
+      result = text ? JSON.parse(text) : {};
+    } catch {
+      throw new Error(`Server returned an invalid response (${response.status}).`);
+    }
     if (!response.ok) throw new Error(result.error || "Unable to load pools.");
-    setPools(result.pools);
+    setPools(result.pools || []);
   }
 
   useEffect(() => {
     let cancelled = false;
     fetch("/api/admin/pools").then(async (response) => {
-      const result = await response.json();
+      const text = await response.text();
+      let result: { error?: string; pools?: Pool[] };
+      try {
+        result = text ? JSON.parse(text) : {};
+      } catch {
+        throw new Error(`Server returned an invalid response (${response.status}).`);
+      }
       if (!response.ok) throw new Error(result.error || "Unable to load pools.");
-      if (!cancelled) setPools(result.pools);
-    }).catch((reason) => { if (!cancelled) setError(reason.message); }).finally(() => { if (!cancelled) setLoading(false); });
+      if (!cancelled) setPools(result.pools || []);
+    }).catch((reason) => { if (!cancelled) setError(reason instanceof Error ? reason.message : "Unable to load pools."); }).finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);
 

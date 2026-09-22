@@ -66,6 +66,10 @@ export async function GET(
       pool: {
         id: pool.id,
         name: pool.name,
+        purpose: pool.purpose,
+        beneficiary: pool.beneficiary,
+        paymentDestinations: pool.paymentDestinations,
+        paymentInstructions: pool.paymentInstructions,
         capAmount: pool.capAmount,
         currency: pool.currency,
         status: pool.status,

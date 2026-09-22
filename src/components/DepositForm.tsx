@@ -26,7 +26,7 @@ export default function DepositForm({ poolId }: DepositFormProps) {
       const response = await fetch("/api/deposits", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID() },
-        body: JSON.stringify({ providerKey, receiptRef }),
+        body: JSON.stringify({ providerKey, receiptRef, poolId }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Verification could not be completed.");
