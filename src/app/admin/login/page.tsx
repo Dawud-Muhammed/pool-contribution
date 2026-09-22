@@ -39,9 +39,9 @@ export default function AdminLoginPage() {
     <main className="shell page-space narrow-page">
       <div className="page-heading">
         <div>
-          <span className="eyebrow">Restricted workspace</span>
-          <h1>Admin sign in.</h1>
-          <p className="lede">Sign in with an account whose database role is set to admin.</p>
+          <span className="eyebrow">Team workspace</span>
+          <h1>Welcome back.</h1>
+          <p className="lede">Sign in to create goals, review payments, and keep each pool moving.</p>
         </div>
       </div>
       <section className="form-panel">

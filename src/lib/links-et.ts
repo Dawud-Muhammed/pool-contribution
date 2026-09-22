@@ -110,15 +110,23 @@ export async function getLinksEtStatus(): Promise<{
  * CBE/Zemen/BoA return numbers; telebirr returns "100 Birr"; Awash returns "100 ETB".
  */
 export function parseReceiptAmount(
-  _source: string,
-  rawAmount: unknown
+  source: string,
+  rawAmount: unknown,
+  receipt?: Record<string, unknown>
 ): number | null {
-  if (typeof rawAmount === "number") {
-    return isNaN(rawAmount) ? null : rawAmount;
+  let valToParse = rawAmount;
+
+  // Handle awash-html which nests the amount under transaction
+  if (source === "awash-html" && receipt?.transaction && typeof receipt.transaction === "object") {
+    valToParse = (receipt.transaction as Record<string, unknown>).amount ?? rawAmount;
   }
-  if (typeof rawAmount === "string") {
+
+  if (typeof valToParse === "number") {
+    return isNaN(valToParse) ? null : valToParse;
+  }
+  if (typeof valToParse === "string") {
     // Remove commas, currency symbols, and extra whitespace
-    const cleaned = rawAmount
+    const cleaned = valToParse
       .replace(/,/g, "")
       .replace(/[^\d.]/g, "")
       .trim();

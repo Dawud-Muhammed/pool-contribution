@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
           depositId: failedDepositId,
           error: typeof verificationResult.error === 'string' 
             ? verificationResult.error 
-            : verificationResult.error?.message || (verificationResult as any).message || "Verification failed",
+            : verificationResult.error?.message || ('message' in verificationResult ? String((verificationResult as Record<string, unknown>).message) : "Verification failed"),
         },
         { status: 400 }
       );
@@ -129,7 +129,8 @@ export async function POST(req: NextRequest) {
     const receipt = verificationResult.receipt;
     const verifiedAmount = parseReceiptAmount(
       receipt.source,
-      receipt.amount
+      receipt.amount,
+      receipt as Record<string, unknown>
     );
 
     // SECURITY: Verify the payment was sent to the correct account (PRD §6 destination mismatch)

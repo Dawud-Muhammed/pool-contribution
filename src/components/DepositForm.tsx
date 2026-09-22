@@ -73,12 +73,12 @@ export default function DepositForm({ poolId }: DepositFormProps) {
     <form className="form-stack" onSubmit={submit}>
       {poolContext && <div className="payment-instructions"><span className="eyebrow">Paying into {poolContext.name}</span>{poolContext.paymentDestinations.map((destination) => <strong key={`${destination.label}-${destination.value}`}>{destination.label} · {destination.value}</strong>)}<p>{poolContext.paymentInstructions}</p></div>}
       <div className="field-grid">
-        <label>Provider<select value={selectedProvider} onChange={(event) => setProviderKey(event.target.value)}>
+        <label>Payment service<select value={selectedProvider} onChange={(event) => setProviderKey(event.target.value)}>
           {displayProviders.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
         </select></label>
-        <label>Receipt reference or URL<input required value={receiptRef} onChange={(event) => setReceiptRef(event.target.value.toUpperCase())} placeholder={selectedProvider === "telebirr" ? "e.g. TXN-48291" : "Paste the receipt URL"} /></label>
+        <label>Receipt number or link<input required value={receiptRef} onChange={(event) => setReceiptRef(event.target.value.toUpperCase())} placeholder={selectedProvider === "telebirr" ? "Example: TXN-48291" : "Paste the receipt link"} /></label>
       </div>
-      <p className="field-note">We verify against the provider source. Your receipt and payer name stay private.</p>
+      <p className="field-note">We check the payment directly with the provider. Your receipt and name stay private.</p>
       <button className="button primary" type="submit" disabled={status === "loading"}>{status === "loading" ? "Checking receipt..." : "Verify receipt"}</button>
       {status !== "idle" && <div className={`form-result ${status}`} role="status"><strong>{status === "success" ? "Receipt verified" : status === "error" ? "Verification needs attention" : ""}</strong><span>{message}</span>{depositId && <small>Deposit ID: {depositId}{poolId ? ` · Allocate it from the ${poolId} pool dashboard.` : ""}</small>}</div>}
     </form>
